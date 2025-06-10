@@ -1,0 +1,22 @@
+---
+- name: 03 – Configure LACP EtherChannel between SW2 & SW3
+  hosts: SW2,SW3
+  gather_facts: no
+
+  vars:
+    channel_iface: Port-channel1
+    member_int: GigabitEthernet0/1 # adjust if needed
+
+  tasks:
+    - name: Create Port-channel
+      ios_config:
+        lines:
+          - interface {{ channel_iface }}
+          - switchport mode trunk
+          - no shutdown
+
+    - name: Add physical port to channel
+      ios_config:
+        parents: interface {{ member_int }}
+        lines:
+          - channel-group 1 mode active

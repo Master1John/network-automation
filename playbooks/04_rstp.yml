@@ -1,0 +1,17 @@
+---
+- name: 04 – Enable Rapid Spanning Tree on all switches
+  hosts: SW1,SW2,SW3
+  gather_facts: no
+
+  tasks:
+    - name: Global RSTP
+      ios_config:
+        lines:
+          - spanning-tree mode rapid-pvst
+
+    - name: Ensure edge ports on access switch
+      when: inventory_hostname == 'SW1'
+      ios_config:
+        lines:
+          - interface range GigabitEthernet0/2-4 # your access ports
+          - spanning-tree portfast

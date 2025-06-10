@@ -1,0 +1,51 @@
+---
+- name: 07 – Install & configure Snort IDS/IPS on Ubuntu controller
+  hosts: localhost
+  connection: local
+  become: yes
+
+  vars:
+    snort_home_net: "192.169.1.0/24"
+    snort_interface: "eth0"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Snort & default rules
+      apt:
+        name:
+          - snort
+          - snort-common
+          - snort-rules-default
+        state: present
+
+    - name: Backup original snort.conf if not already backed up
+      copy:
+        src: /etc/snort/snort.conf
+        dest: /etc/snort/snort.conf.orig
+        remote_src: yes
+        force: no
+
+    - name: Deploy custom snort.conf from template
+      template:
+        src: ../templates/snort/snort.conf.j2
+        dest: /etc/snort/snort.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart Snort
+
+    - name: Ensure snort service is enabled & running
+      service:
+        name: snort
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart Snort
+      service:
+        name: snort
+        state: restarted

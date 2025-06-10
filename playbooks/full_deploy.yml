@@ -1,0 +1,7 @@
+---
+- import_playbook: 01_base.yml
+- import_playbook: 02_interfaces.yml
+- import_playbook: 03_link_aggregation.yml
+- import_playbook: 04_rstp.yml
+- import_playbook: 05_access_controller.yml
+- import_playbook: 06_firewall.yml

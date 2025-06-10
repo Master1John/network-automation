@@ -1,0 +1,107 @@
+---
+- name: 02 – Configure mgmt IPs on IOS devices
+  hosts: cisco_ios
+  gather_facts: no
+
+  tasks:
+    - name: Router: Gi0/0
+      when: inventory_hostname == 'Router'
+      ios_config:
+        lines---
+- name: 02 – Configure mgmt IPs on IOS devices
+  hosts: cisco_ios
+  gather_facts: no
+
+  tasks:
+    - name: Router: Gi0/0
+      when: inventory_hostname == 'Router'
+      ios_config:
+        lines:
+          - interface GigabitEthernet0/0
+          - ip address 192.169.1.2 255.255.255.0
+          - no shutdown
+
+    - name: Dist & Access Switches: VLAN1
+      when: inventory_hostname in ['SW1','SW2','SW3']
+      ios_config:
+        lines:
+          - interface Vlan1
+          - ip address {{
+              '192.169.1.' +
+              ( {'SW2':'11','SW3':'12','SW1':'13'}[inventory_hostname] )
+            }} 255.255.255.0
+          - no shutdown
+          - exit
+          - ip default-gateway {{ default_gateway }}
+
+    - name: AP & AC: Gi0
+      when: inventory_hostname in ['AP','AC']
+      ios_config:
+        lines:
+          - interface GigabitEthernet0
+          - ip address {{
+              '192.169.1.' +
+              ( {'AP':'14','AC':'15'}[inventory_hostname] )
+            }} 255.255.255.0
+          - no shutdown
+          - exit
+          - ip default-gateway {{ default_gateway }}
+
+- name: 02 – Configure ASA mgmt interface
+  hosts: firewall
+  gather_facts: no
+
+  tasks:
+    - name: Management0/0 on ASA
+      asa_config:
+        lines:
+          - interface Management0/0
+          - nameif mgmt
+          - security-level 100
+          - ip address 192.169.1.10 255.255.255.0
+          - no shutdown
+:
+          - interface GigabitEthernet0/0
+          - ip address 192.169.1.2 255.255.255.0
+          - no shutdown
+
+    - name: Dist & Access Switches: VLAN1
+      when: inventory_hostname in ['SW1','SW2','SW3']
+      ios_config:
+        lines:
+          - interface Vlan1
+          - ip address {{
+              '192.169.1.' +
+              ( {'SW2':'11','SW3':'12','SW1':'13'}[inventory_hostname] )
+            }} 255.255.255.0
+          - no shutdown
+          - exit
+          - ip default-gateway {{ default_gateway }}
+
+    - name: AP & AC: Gi0
+      when: inventory_hostname in ['AP','AC']
+      ios_config:
+        lines:
+          - interface GigabitEthernet0
+          - ip address {{
+              '192.169.1.' +
+              ( {'AP':'14','AC':'15'}[inventory_hostname] )
+            }} 255.255.255.0
+          - no shutdown
+          - exit
+          - ip default-gateway {{ default_gateway }}
+
+- name: 02 – Configure ASA mgmt interface
+  hosts: firewall
+  gather_facts: no
+
+  tasks:
+    - name: Management0/0 on ASA
+      asa_config:
+        lines:
+          - interface Management0/0
+          - nameif mgmt
+          - security-level 100
+          - ip address 192.169.1.10 255.255.255.0
+          - no shutdown
+

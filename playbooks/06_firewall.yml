@@ -1,0 +1,27 @@
+---
+- name: 06 – ASA Firewall Policies & NAT
+  hosts: firewall
+  gather_facts: no
+
+  tasks:
+    - name: Configure inside interface to Router
+      asa_config:
+        lines:
+          - interface GigabitEthernet0/1
+          - nameif inside
+          - security-level 50
+          - ip address 192.169.1.254 255.255.255.0
+          - no shutdown
+
+    - name: Permit SSH from management network
+      asa_config:
+        lines:
+          - access-list inside_access_in permit tcp 192.169.1.0 255.255.255.0 host 192.169.1.10 eq 22
+          - access-group inside_access_in in interface inside
+
+    - name: NAT for inside to outside
+      asa_config:
+        lines:
+          - object network INSIDE-NET
+          - subnet 192.169.1.0 255.255.255.0
+          - nat (inside,outside) dynamic interface

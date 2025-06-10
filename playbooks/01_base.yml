@@ -1,0 +1,49 @@
+---
+- name: 01 – Base SSH & User config on IOS devices
+  hosts: cisco_ios
+  gather_facts: no
+
+  tasks:
+    - name: Hostname & domain
+      ios_config:
+        lines:
+          - hostname {{ inventory_hostname }}
+          - ip domain-name {{ domain_name }}
+
+    - name: Generate RSA key & SSH settings
+      ios_config:
+        lines:
+          - crypto key generate rsa modulus {{ crypto_key_modulus }}
+          - ip ssh version {{ ssh_version }}
+          - ip ssh time-out 60
+          - ip ssh authentication-retries 3
+
+    - name: Ensure ansible user exists
+      ios_config:
+        lines:
+          - username ansible privilege 15 secret {{ ansible_password }}
+
+    - name: Secure VTY for SSH
+      ios_config:
+        lines:
+          - line vty 0 4
+          - login local
+          - transport input ssh
+
+- name: 01 – Base SSH & User config on ASA firewall
+  hosts: firewall
+  gather_facts: no
+
+  tasks:
+    - name: Domain & user on ASA
+      asa_config:
+        lines:
+          - hostname {{ inventory_hostname }}
+          - ip domain-name {{ domain_name }}
+          - username ansible password {{ ansible_password }} privilege 15
+
+    - name: Enable SSH on management interface
+      asa_config:
+        lines:
+          - crypto key generate rsa modulus {{ crypto_key_modulus }}
+          - ssh 192.169.1.0 255.255.255.0 mgmt

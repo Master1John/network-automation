@@ -1,0 +1,19 @@
+###############################################################
+# Snort configuration for network-automation project
+###############################################################
+
+var HOME_NET {{ snort_home_net }}
+var EXTERNAL_NET any
+
+# Configure the interface Snort should listen on
+var INTERFACE {{ snort_interface }}
+
+# Preprocessor and detection rules
+include classification.config
+include reference.config
+include /etc/snort/rules/snort.rules
+
+# Output alerts both to unified2 files and stdout
+output unified2: filename snort.log, limit 128
+output alert_fast: stdout
+

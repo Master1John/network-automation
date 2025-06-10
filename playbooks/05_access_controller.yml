@@ -1,0 +1,25 @@
+---
+- name: 05 – Configure Wireless Access Controller (AC)
+  hosts: AC
+  gather_facts: no
+
+  tasks:
+    - name: WLAN interface & management
+      ios_config:
+        lines:
+          - interface GigabitEthernet0
+          - description Management
+          - no shutdown
+
+    - name: Create example WLAN (SSID)
+      ios_config:
+        lines:
+          - wlan guest Guest-SSID
+          - security wpa2 ciphers aes
+          - no shutdown
+
+    - name: Point APs at WLC
+      ios_config:
+        lines:
+          - ap mgmt ip default-router {{ default_gateway }}
+          - ap join-controller {{ inventory_hostname }}
