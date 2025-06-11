@@ -1,107 +1,46 @@
 ---
-- name: 02 – Configure mgmt IPs on IOS devices
+- name: 02 – Configure management IPs on IOS devices
   hosts: cisco_ios
   gather_facts: no
 
-  tasks:
-    - name: Router: Gi0/0
-      when: inventory_hostname == 'Router'
-      ios_config:
-        lines---
-- name: 02 – Configure mgmt IPs on IOS devices
-  hosts: cisco_ios
-  gather_facts: no
+  vars:
+    mgmt_ips:
+      Router: "192.168.1.2"
+      SW2: "192.168.1.11"
+      SW3: "192.168.1.12"
+      SW1: "192.168.1.13"
+      AP: "192.168.1.14"
+      AC: "192.168.1.15"
+
+    mgmt_interfaces:
+      Router: "interface GigabitEthernet0/0"
+      SW2: "interface Vlan1"
+      SW3: "interface Vlan1"
+      SW1: "interface Vlan1"
+      AP: "interface GigabitEthernet0"
+      AC: "interface GigabitEthernet0"
 
   tasks:
-    - name: Router: Gi0/0
-      when: inventory_hostname == 'Router'
+    - name: Configure management interface & IP on IOS devices
       ios_config:
         lines:
-          - interface GigabitEthernet0/0
-          - ip address 192.169.1.2 255.255.255.0
+          - "{{ mgmt_interfaces[inventory_hostname] }}"
+          - "ip address {{ mgmt_ips[inventory_hostname] }} 255.255.255.0"
           - no shutdown
+        # after interface stanza
+        parents: "{{ mgmt_interfaces[inventory_hostname] | regex_replace('^interface ', '') }}"
+      when: inventory_hostname in mgmt_ips.keys()
 
-    - name: Dist & Access Switches: VLAN1
-      when: inventory_hostname in ['SW1','SW2','SW3']
-      ios_config:
-        lines:
-          - interface Vlan1
-          - ip address {{
-              '192.169.1.' +
-              ( {'SW2':'11','SW3':'12','SW1':'13'}[inventory_hostname] )
-            }} 255.255.255.0
-          - no shutdown
-          - exit
-          - ip default-gateway {{ default_gateway }}
-
-    - name: AP & AC: Gi0
-      when: inventory_hostname in ['AP','AC']
-      ios_config:
-        lines:
-          - interface GigabitEthernet0
-          - ip address {{
-              '192.169.1.' +
-              ( {'AP':'14','AC':'15'}[inventory_hostname] )
-            }} 255.255.255.0
-          - no shutdown
-          - exit
-          - ip default-gateway {{ default_gateway }}
-
-- name: 02 – Configure ASA mgmt interface
+- name: 02 – Configure management interface on ASA firewall
   hosts: firewall
   gather_facts: no
 
   tasks:
-    - name: Management0/0 on ASA
+    - name: Configure ASA Management0/0
       asa_config:
         lines:
           - interface Management0/0
           - nameif mgmt
           - security-level 100
-          - ip address 192.169.1.10 255.255.255.0
+          - ip address 192.168.1.10 255.255.255.0
           - no shutdown
-:
-          - interface GigabitEthernet0/0
-          - ip address 192.169.1.2 255.255.255.0
-          - no shutdown
-
-    - name: Dist & Access Switches: VLAN1
-      when: inventory_hostname in ['SW1','SW2','SW3']
-      ios_config:
-        lines:
-          - interface Vlan1
-          - ip address {{
-              '192.169.1.' +
-              ( {'SW2':'11','SW3':'12','SW1':'13'}[inventory_hostname] )
-            }} 255.255.255.0
-          - no shutdown
-          - exit
-          - ip default-gateway {{ default_gateway }}
-
-    - name: AP & AC: Gi0
-      when: inventory_hostname in ['AP','AC']
-      ios_config:
-        lines:
-          - interface GigabitEthernet0
-          - ip address {{
-              '192.169.1.' +
-              ( {'AP':'14','AC':'15'}[inventory_hostname] )
-            }} 255.255.255.0
-          - no shutdown
-          - exit
-          - ip default-gateway {{ default_gateway }}
-
-- name: 02 – Configure ASA mgmt interface
-  hosts: firewall
-  gather_facts: no
-
-  tasks:
-    - name: Management0/0 on ASA
-      asa_config:
-        lines:
-          - interface Management0/0
-          - nameif mgmt
-          - security-level 100
-          - ip address 192.169.1.10 255.255.255.0
-          - no shutdown
-
