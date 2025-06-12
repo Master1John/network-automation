@@ -1,51 +1,81 @@
 ---
-- name: 07 – Install & configure Snort IDS/IPS on Ubuntu controller
+- name: 07 – Install & configure Snort 3 IDS/IPS on Ubuntu controller
   hosts: localhost
   connection: local
   become: yes
+  vars_prompt:
+    - name: ansible_become_pass
+      prompt: "Enter sudo password"
+      private: yes
 
   vars:
-    snort_home_net: "192.169.1.0/24"
-    snort_interface: "eth0"
+    # where to keep sources and where to install Snort
+    src_root: /usr/local/src/snort_src
+    install_prefix: /usr/local/snort3
+    daq_repo: https://github.com/snort3/libdaq.git
+    snort_repo: https://github.com/snort3/snort3.git
 
   tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
-
-    - name: Install Snort & default rules
+    - name: Install Snort 3 build dependencies
       apt:
         name:
-          - snort
-          - snort-common
-          - snort-rules-default
+          - build-essential
+          - autotools-dev
+          - libdumbnet-dev
+          - libluajit-5.1-dev
+          - libpcap-dev
+          - zlib1g-dev
+          - pkg-config
+          - libhwloc-dev
+          - cmake
+          - libtool
+          - git
+          - autoconf
+          - bison
+          - flex
+          - libnetfilter-queue-dev
+          - libmnl-dev
         state: present
+        update_cache: yes
 
-    - name: Backup original snort.conf if not already backed up
-      copy:
-        src: /etc/snort/snort.conf
-        dest: /etc/snort/snort.conf.orig
-        remote_src: yes
-        force: no
+    - name: Create source directory
+      file:
+        path: "{{ src_root }}"
+        state: directory
+        mode: '0755'
 
-    - name: Deploy custom snort.conf from template
-      template:
-        src: ../templates/snort/snort.conf.j2
-        dest: /etc/snort/snort.conf
-        owner: root
-        group: root
-        mode: "0644"
-      notify: Restart Snort
+    - name: Clone DAQ library
+      git:
+        repo: "{{ daq_repo }}"
+        dest: "{{ src_root }}/libdaq"
+        depth: 1
 
-    - name: Ensure snort service is enabled & running
-      service:
-        name: snort
-        state: started
-        enabled: yes
+    - name: Build & install DAQ
+      shell: |
+        cd {{ src_root }}/libdaq
+        ./bootstrap
+        ./configure
+        make
+        make install
+      args:
+        creates: /usr/local/lib/libdaq.so
 
-  handlers:
-    - name: Restart Snort
-      service:
-        name: snort
-        state: restarted
+    - name: Clone Snort 3
+      git:
+        repo: "{{ snort_repo }}"
+        dest: "{{ src_root }}/snort3"
+        depth: 1
+
+    - name: Build & install Snort 3
+      shell: |
+        cd {{ src_root }}/snort3
+        ./configure_cmake.sh --prefix={{ install_prefix }} --enable-tcmalloc
+        cd build
+        make -j "$(nproc)"
+        make install
+      args:
+        creates: "{{ install_prefix }}/bin/snort"
+
+    - name: Update shared‐library cache
+      shell: ldconfig
+
