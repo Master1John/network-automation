@@ -5,3 +5,4 @@
 - import_playbook: 04_rstp.yml
 - import_playbook: 05_access_controller.yml
 - import_playbook: 06_firewall.yml
+- import_playbook: 07_snort.yml
