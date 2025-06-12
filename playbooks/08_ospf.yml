@@ -1,0 +1,29 @@
+---
+- name: 03 – Configure OSPF on Cisco IOS devices
+  hosts: cisco_ios
+  gather_facts: no
+
+  vars:
+    # OSPF process ID and area to use
+    ospf_process: 1
+    ospf_area: 0
+
+    # List here any networks you want in OSPF (adjust to your topology)
+    ospf_networks:
+      - network: 192.169.1.0
+        wildcard: 0.0.0.255
+      - network: 10.0.0.0
+        wildcard: 0.0.0.255
+
+  tasks:
+    - name: Ensure OSPF process {{ ospf_process }} is defined
+      ios_config:
+        lines:
+          - router ospf {{ ospf_process }}
+
+    - name: Advertise each network in area {{ ospf_area }}
+      ios_config:
+        parents: router ospf {{ ospf_process }}
+        lines:
+          - "network {{ item.network }} {{ item.wildcard }} area {{ ospf_area }}"
+      loop: "{{ ospf_networks }}"
